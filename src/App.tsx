@@ -8,6 +8,7 @@ import { Pumping } from './pages/Pumping'
 import { Health } from './pages/Health'
 import { Login } from './pages/Login'
 import { Onboarding } from './pages/Onboarding'
+import { Analytics } from '@vercel/analytics/react'
 import './styles/global.css'
 
 function AppContent() {
@@ -48,6 +49,7 @@ export function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppContent />
+          <Analytics />
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
