@@ -227,5 +227,43 @@ CREATE INDEX IF NOT EXISTS idx_diaper_baby_changed ON public.diaper_changes(baby
 CREATE INDEX IF NOT EXISTS idx_pumping_baby_pumped ON public.pumping_sessions(baby_id, pumped_at DESC);
 CREATE INDEX IF NOT EXISTS idx_growth_baby_recorded ON public.growth_records(baby_id, recorded_at DESC);
 CREATE INDEX IF NOT EXISTS idx_vaccine_baby ON public.vaccine_records(baby_id);
-CREATE INDEX IF NOT EXISTS idx_care_team_user ON public.care_team(user_id);
 CREATE INDEX IF NOT EXISTS idx_babies_invite_code ON public.babies(invite_code);
+
+-- ============================================================
+-- UPDATE TABLES FOR ACCOUNT DELETION (OPTION B: SET NULL)
+-- ============================================================
+
+-- Modificamos as tabelas para que, se um cuidador for deletado, suas anotações fiquem como NULL em vez de serem apagadas.
+-- Obs: Se o dono do bebê for deletado, o bebê inteiro e todas as anotações são apagados via ON DELETE CASCADE.
+
+-- Feeding sessions
+ALTER TABLE public.feeding_sessions ALTER COLUMN logged_by DROP NOT NULL;
+ALTER TABLE public.feeding_sessions DROP CONSTRAINT IF EXISTS feeding_sessions_logged_by_fkey;
+ALTER TABLE public.feeding_sessions ADD CONSTRAINT feeding_sessions_logged_by_fkey FOREIGN KEY (logged_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- Sleep sessions
+ALTER TABLE public.sleep_sessions ALTER COLUMN logged_by DROP NOT NULL;
+ALTER TABLE public.sleep_sessions DROP CONSTRAINT IF EXISTS sleep_sessions_logged_by_fkey;
+ALTER TABLE public.sleep_sessions ADD CONSTRAINT sleep_sessions_logged_by_fkey FOREIGN KEY (logged_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- Diaper changes
+ALTER TABLE public.diaper_changes ALTER COLUMN logged_by DROP NOT NULL;
+ALTER TABLE public.diaper_changes DROP CONSTRAINT IF EXISTS diaper_changes_logged_by_fkey;
+ALTER TABLE public.diaper_changes ADD CONSTRAINT diaper_changes_logged_by_fkey FOREIGN KEY (logged_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- Pumping sessions
+ALTER TABLE public.pumping_sessions ALTER COLUMN logged_by DROP NOT NULL;
+ALTER TABLE public.pumping_sessions DROP CONSTRAINT IF EXISTS pumping_sessions_logged_by_fkey;
+ALTER TABLE public.pumping_sessions ADD CONSTRAINT pumping_sessions_logged_by_fkey FOREIGN KEY (logged_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- ============================================================
+-- RPC: Delete Current User
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.delete_current_user()
+RETURNS void AS $$
+BEGIN
+  -- Deleta o usuário atual da tabela auth.users.
+  -- Usar SECURITY DEFINER permite que a função burle o RLS e tenha permissão de deletar o usuário de auth.users.
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun, LogOut, Users, Copy, Check, Baby, Edit } from 'lucide-react'
+import { Moon, Sun, LogOut, Users, Copy, Check, Baby, Edit, AlertTriangle } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
 import { useBabyAge } from '../../hooks/useBabyAge'
@@ -9,7 +9,7 @@ import { Button } from '../ui/Button'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
-  const { baby, signOut, setBaby } = useAuth()
+  const { baby, signOut, setBaby, deleteAccount } = useAuth()
   const age = useBabyAge(baby?.birth_date ?? null)
   
   const [showProfile, setShowProfile] = useState(false)
@@ -22,6 +22,11 @@ export function Header() {
   const [editBirthDate, setEditBirthDate] = useState('')
   const [editGender, setEditGender] = useState<'male' | 'female' | null>(null)
   const [updating, setUpdating] = useState(false)
+
+  // Delete states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (baby) {
@@ -107,7 +112,11 @@ export function Header() {
 
       <Modal
         isOpen={showProfile}
-        onClose={() => setShowProfile(false)}
+        onClose={() => {
+          setShowProfile(false)
+          setShowDeleteConfirm(false)
+          setDeleteConfirmText('')
+        }}
         title="Perfil e Rede de Apoio"
       >
         <div className="flex flex-col gap-6">
@@ -218,15 +227,73 @@ export function Header() {
             </div>
           </div>
 
-          <Button
-            variant="danger"
-            fullWidth
-            icon={<LogOut size={18} />}
-            onClick={() => { setShowProfile(false); signOut(); }}
-            className="mt-4"
-          >
-            Sair da conta
-          </Button>
+          {showDeleteConfirm ? (
+            <div className="flex flex-col gap-3 mt-4 p-4 bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-200 dark:border-red-900/50">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-sm">
+                <AlertTriangle size={18} />
+                <span>Excluir Conta Permanentemente</span>
+              </div>
+              <p className="text-xs text-red-800 dark:text-red-300">
+                Esta ação apagará <b>permanentemente</b> sua conta e todos os dados criados por você. Digite <strong className="select-none">EXCLUIR</strong> abaixo para confirmar.
+              </p>
+              <input
+                type="text"
+                className="bg-white dark:bg-black/20 border border-red-300 dark:border-red-800 rounded-lg px-3 py-2 text-sm font-bold text-red-900 dark:text-red-100 outline-none focus:border-red-500 uppercase placeholder:text-red-300 dark:placeholder:text-red-900"
+                placeholder="EXCLUIR"
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value.toUpperCase())}
+              />
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteConfirmText('');
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  loading={isDeleting}
+                  disabled={deleteConfirmText !== 'EXCLUIR'}
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await deleteAccount();
+                      setShowProfile(false);
+                    } catch (e) {
+                      setIsDeleting(false);
+                    }
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white border-none shadow-red-500/20"
+                >
+                  Confirmar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 mt-4">
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={<LogOut size={18} />}
+                onClick={() => { setShowProfile(false); signOut(); }}
+              >
+                Sair da conta
+              </Button>
+              
+              <button
+                className="text-xs font-bold text-red-500 hover:text-red-600 py-2 mt-2 transition-colors"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Excluir minha conta
+              </button>
+            </div>
+          )}
         </div>
       </Modal>
     </>
