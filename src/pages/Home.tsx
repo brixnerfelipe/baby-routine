@@ -177,7 +177,7 @@ export function Home() {
         position: 'bottom' as const,
         labels: {
           padding: 16,
-          font: { family: 'Nunito', size: 12, weight: '600' as const },
+          font: { family: 'Nunito', size: 12, weight: 'bold' as const },
           color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#0c436e',
           usePointStyle: true,
           pointStyleWidth: 10,

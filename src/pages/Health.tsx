@@ -223,8 +223,8 @@ export function Health() {
             const val = Number(ctx[0].parsed.x);
             return `${Math.round(val)} meses`;
           },
-          label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) => {
-            if (!ctx.parsed.y) return ''
+          label: (ctx: { dataset: { label?: string }; parsed: { y: number | null } }) => {
+            if (ctx.parsed.y == null) return ''
             return ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} kg`
           },
         },
