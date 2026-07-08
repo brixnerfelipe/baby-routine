@@ -42,7 +42,8 @@ export function Health() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' })
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([0, 1, 2]))
 
-  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0])
+  const maxDate = new Date().toISOString().split('T')[0]
+  const [formDate, setFormDate] = useState(maxDate)
   const [formWeight, setFormWeight] = useState('')
   const [formHeight, setFormHeight] = useState('')
   const [formHead, setFormHead] = useState('')
@@ -71,7 +72,7 @@ export function Health() {
         height_cm: formHeight ? Number(formHeight) : null,
         head_circumference_cm: formHead ? Number(formHead) : null,
       })
-      setFormDate(new Date().toISOString().split('T')[0])
+      setFormDate(maxDate)
       setFormWeight('')
       setFormHeight('')
       setFormHead('')
@@ -433,7 +434,7 @@ export function Health() {
               value={formDate}
               onChange={e => setFormDate(e.target.value)}
               min={baby?.birth_date}
-              max={new Date().toISOString().split('T')[0]}
+              max={maxDate}
             />
           </div>
 
@@ -482,12 +483,15 @@ export function Health() {
             size="lg"
             fullWidth
             loading={saving}
-            disabled={!formWeight && !formHeight && !formHead}
+            disabled={(!formWeight && !formHeight && !formHead) || (baby ? (formDate < baby.birth_date || formDate > maxDate) : false)}
             onClick={handleSaveGrowth}
             className="mt-2"
           >
             Salvar Dados
           </Button>
+          {baby && (formDate < baby.birth_date || formDate > maxDate) && (
+            <p className="text-xs text-rose-500 font-bold text-center -mt-1">A data da consulta deve ser entre o nascimento do bebê e hoje.</p>
+          )}
         </div>
       </Modal>
 
