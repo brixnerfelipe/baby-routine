@@ -126,14 +126,19 @@ export function Health() {
   const isVaccineDone = (key: string) => vaccineRecords.some(v => v.vaccine_key === key)
 
   const whoData = baby?.gender === 'female' ? WHO_WEIGHT_GIRLS : WHO_WEIGHT_BOYS
-  const chartLabels = whoData.map(p => `${p.age}m`)
+
+  const calculateAgeInMonths = (birthDate: string, recordDate: string) => {
+    const birth = new Date(birthDate).getTime();
+    const record = new Date(recordDate).getTime();
+    const diffDays = (record - birth) / (1000 * 60 * 60 * 24);
+    return Math.max(0, diffDays / 30.436875);
+  };
 
   const growthChartData = {
-    labels: chartLabels,
     datasets: [
       {
         label: 'P3',
-        data: whoData.map(p => p.p3),
+        data: whoData.map(p => ({ x: p.age, y: p.p3 })),
         borderColor: 'rgba(12, 149, 235, 0.2)', // baby-500 light
         borderWidth: 1,
         borderDash: [4, 4],
@@ -142,7 +147,7 @@ export function Health() {
       },
       {
         label: 'P15',
-        data: whoData.map(p => p.p15),
+        data: whoData.map(p => ({ x: p.age, y: p.p15 })),
         borderColor: 'rgba(12, 149, 235, 0.4)',
         borderWidth: 1,
         borderDash: [4, 4],
@@ -151,7 +156,7 @@ export function Health() {
       },
       {
         label: 'P50',
-        data: whoData.map(p => p.p50),
+        data: whoData.map(p => ({ x: p.age, y: p.p50 })),
         borderColor: 'rgba(12, 149, 235, 0.8)',
         borderWidth: 2,
         pointRadius: 0,
@@ -159,7 +164,7 @@ export function Health() {
       },
       {
         label: 'P85',
-        data: whoData.map(p => p.p85),
+        data: whoData.map(p => ({ x: p.age, y: p.p85 })),
         borderColor: 'rgba(12, 149, 235, 0.4)',
         borderWidth: 1,
         borderDash: [4, 4],
@@ -168,7 +173,7 @@ export function Health() {
       },
       {
         label: 'P97',
-        data: whoData.map(p => p.p97),
+        data: whoData.map(p => ({ x: p.age, y: p.p97 })),
         borderColor: 'rgba(12, 149, 235, 0.2)',
         borderWidth: 1,
         borderDash: [4, 4],
@@ -177,8 +182,8 @@ export function Health() {
       },
       ...(growthRecords.length > 0 ? [{
         label: baby?.name ?? 'Bebê',
-        data: growthRecords.map(r => ({
-          x: r.recorded_at.slice(0, 7),
+        data: growthRecords.filter(r => r.weight_kg !== null).map(r => ({
+          x: calculateAgeInMonths(baby!.birth_date, r.recorded_at),
           y: r.weight_kg,
         })),
         borderColor: '#025fa3', // baby-700
@@ -214,6 +219,10 @@ export function Health() {
       },
       tooltip: {
         callbacks: {
+          title: (ctx: any) => {
+            const val = Number(ctx[0].parsed.x);
+            return `${Math.round(val)} meses`;
+          },
           label: (ctx: { dataset: { label?: string }; parsed: { y: number } }) => {
             if (!ctx.parsed.y) return ''
             return ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} kg`
@@ -223,11 +232,15 @@ export function Health() {
     },
     scales: {
       x: {
+        type: 'linear' as const,
+        min: 0,
+        max: 24,
         ticks: {
+          stepSize: 3,
+          callback: (value: any) => `${value}m`,
           font: { size: 10 },
           color: textColor,
           maxRotation: 0,
-          maxTicksLimit: 8,
         },
         grid: { color: gridColor, lineWidth: 1 },
       },
