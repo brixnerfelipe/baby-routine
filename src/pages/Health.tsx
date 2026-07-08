@@ -38,6 +38,7 @@ export function Health() {
   const [vaccineRecords, setVaccineRecords] = useState<VaccineRecord[]>([])
   const [showGrowthModal, setShowGrowthModal] = useState(false)
   const [showInfoModal, setShowInfoModal] = useState(false)
+  const [showRecordsList, setShowRecordsList] = useState(true)
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' })
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([0, 1, 2]))
 
@@ -295,9 +296,27 @@ export function Health() {
             <div className="relative h-[250px] w-full mb-6">
               <Line data={growthChartData} options={chartOptions} />
             </div>
-            <div className="flex flex-col gap-2">
-               {growthRecords.slice().reverse().map(r => (
-                <div key={r.id} className="flex items-center justify-between p-3.5 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-color)]">
+
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                Histórico de Consultas ({growthRecords.length})
+              </span>
+              <button 
+                onClick={() => setShowRecordsList(!showRecordsList)}
+                className="text-xs font-bold text-baby-600 dark:text-baby-400 hover:opacity-70 transition-opacity flex items-center gap-1"
+              >
+                {showRecordsList ? (
+                  <>Esconder <ChevronUp size={14} /></>
+                ) : (
+                  <>Mostrar <ChevronDown size={14} /></>
+                )}
+              </button>
+            </div>
+
+            {showRecordsList && (
+              <div className="flex flex-col gap-2">
+                 {growthRecords.map(r => (
+                  <div key={r.id} className="flex items-center justify-between p-3.5 bg-[var(--bg-base)] rounded-2xl border border-[var(--border-color)]">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-[var(--text-secondary)]">{new Date(r.recorded_at).toLocaleDateString('pt-BR')}</span>
                     <div className="flex items-center gap-3 text-sm font-extrabold text-[var(--text-primary)] mt-1">
@@ -315,7 +334,8 @@ export function Health() {
                   </button>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -412,6 +432,8 @@ export function Health() {
               className="bg-[var(--bg-base)] px-4 py-3 rounded-xl border border-[var(--border-color)] text-[var(--text-primary)] font-medium outline-none focus:border-baby-500 focus:ring-2 focus:ring-baby-500/20 transition-all"
               value={formDate}
               onChange={e => setFormDate(e.target.value)}
+              min={baby?.birth_date}
+              max={new Date().toISOString().split('T')[0]}
             />
           </div>
 
