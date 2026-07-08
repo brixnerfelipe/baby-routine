@@ -68,11 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchBaby = async (userId: string) => {
     try {
       // First check if user owns a baby
-      const { data: ownedBaby } = await supabase
+      const { data: ownedBaby, error: ownedError } = await supabase
         .from('babies')
         .select('*')
         .eq('created_by', userId)
-        .single()
+        .maybeSingle()
 
       if (ownedBaby) {
         setBaby(ownedBaby)
@@ -81,11 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Check if user is part of a care team
-      const { data: careTeam } = await supabase
+      const { data: careTeam, error: careTeamError } = await supabase
         .from('care_team')
         .select('babies(*)')
         .eq('user_id', userId)
-        .single()
+        .maybeSingle()
 
       if (careTeam?.babies) {
         setBaby(careTeam.babies as unknown as Baby)
