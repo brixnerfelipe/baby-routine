@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Play, Square, RotateCcw, Clock, ArrowLeftRight, Baby, Milk, Calendar, Plus } from 'lucide-react'
 import { useTimer, useCountdown } from '../../hooks/useTimer'
 import { useAuth } from '../../contexts/AuthContext'
@@ -25,6 +25,29 @@ export function FeedingCard({ onNewSession }: { onNewSession?: () => void }) {
   const [manualStart, setManualStart] = useState(() => new Date(Date.now() - 20 * 60 * 1000).toISOString().slice(0, 16))
   const [manualEnd, setManualEnd] = useState(() => new Date().toISOString().slice(0, 16))
   const [manualSide, setManualSide] = useState<Side>('left')
+
+  useEffect(() => {
+    async function fetchLastFeeding() {
+      if (!baby) return
+      try {
+        const { data, error } = await supabase
+          .from('feeding_sessions')
+          .select('side')
+          .eq('baby_id', baby.id)
+          .not('ended_at', 'is', null)
+          .order('ended_at', { ascending: false })
+          .limit(1)
+          .single()
+        
+        if (data && !error) {
+          setLastSide(data.side as Side)
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    fetchLastFeeding()
+  }, [baby])
 
   const feedingTimer = useTimer({
     storageKey: `baby-feeding-timer-${baby?.id}`,
@@ -109,6 +132,7 @@ export function FeedingCard({ onNewSession }: { onNewSession?: () => void }) {
         logged_by: user.id,
         logged_by_name: user.email?.split('@')[0] ?? 'Cuidador',
       })
+      setLastSide(manualSide)
       setShowManualModal(false)
       onNewSession?.()
     } catch (err) {
