@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.sleep_sessions (
 CREATE TABLE IF NOT EXISTS public.diaper_changes (
   id                   UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   baby_id              UUID NOT NULL REFERENCES public.babies(id) ON DELETE CASCADE,
-  type                 TEXT NOT NULL CHECK (type IN ('pee', 'poop')),
+  type                 TEXT NOT NULL CHECK (type IN ('pee', 'poop', 'both')),
   poop_color           TEXT CHECK (poop_color IN ('yellow', 'green', 'brown', 'red', 'white', 'black')),
   poop_consistency     TEXT CHECK (poop_consistency IN ('liquid', 'paste', 'hard')),
   changed_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
