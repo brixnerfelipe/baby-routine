@@ -93,32 +93,74 @@ export function useTimer(options: UseTimerOptions = {}) {
 /**
  * Countdown timer — counts down from a given number of seconds
  */
-export function useCountdown(totalSeconds: number, onComplete?: () => void) {
-  const [remaining, setRemaining] = useState(totalSeconds)
-  const [isRunning, setIsRunning] = useState(false)
+interface CountdownState {
+  isRunning: boolean
+  targetTime: number | null
+}
+
+export function useCountdown(totalSeconds: number, onComplete?: () => void, storageKey?: string) {
+  const getInitialState = (): CountdownState => {
+    if (storageKey) {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        return JSON.parse(saved) as CountdownState
+      }
+    }
+    return { isRunning: false, targetTime: null }
+  }
+
+  const [state, setState] = useState<CountdownState>(getInitialState)
+  const [remaining, setRemaining] = useState(() => {
+    if (state.isRunning && state.targetTime) {
+      return Math.max(0, Math.ceil((state.targetTime - Date.now()) / 1000))
+    }
+    return totalSeconds
+  })
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  useEffect(() => {
+    if (storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(state))
+    }
+  }, [state, storageKey])
+
   const start = useCallback(() => {
+    const target = Date.now() + totalSeconds * 1000
+    setState({ isRunning: true, targetTime: target })
     setRemaining(totalSeconds)
-    setIsRunning(true)
   }, [totalSeconds])
 
   const stop = useCallback(() => {
-    setIsRunning(false)
-    if (intervalRef.current) clearInterval(intervalRef.current)
-  }, [])
+    setState({ isRunning: false, targetTime: null })
+    if (storageKey) localStorage.removeItem(storageKey)
+  }, [storageKey])
 
   useEffect(() => {
-    if (isRunning) {
+    if (state.isRunning && state.targetTime) {
+      // Check immediately in case it expired while away
+      const now = Date.now()
+      const initialR = Math.ceil((state.targetTime - now) / 1000)
+      if (initialR <= 0) {
+          setState({ isRunning: false, targetTime: null })
+          setRemaining(0)
+          onComplete?.()
+          if (storageKey) localStorage.removeItem(storageKey)
+          return
+      }
+
       intervalRef.current = setInterval(() => {
-        setRemaining(r => {
-          if (r <= 1) {
-            setIsRunning(false)
-            onComplete?.()
-            return 0
-          }
-          return r - 1
-        })
+        const currentNow = Date.now()
+        const r = Math.ceil((state.targetTime! - currentNow) / 1000)
+        if (r <= 0) {
+          setState({ isRunning: false, targetTime: null })
+          setRemaining(0)
+          onComplete?.()
+          if (storageKey) localStorage.removeItem(storageKey)
+          if (intervalRef.current) clearInterval(intervalRef.current)
+        } else {
+          setRemaining(r)
+        }
       }, 1000)
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -126,7 +168,7 @@ export function useCountdown(totalSeconds: number, onComplete?: () => void) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isRunning, onComplete])
+  }, [state.isRunning, state.targetTime, onComplete, storageKey])
 
   const formatTime = (seconds: number): string => {
     const m = Math.floor(seconds / 60)
@@ -136,5 +178,5 @@ export function useCountdown(totalSeconds: number, onComplete?: () => void) {
 
   const progress = 1 - remaining / totalSeconds
 
-  return { isRunning, remaining, display: formatTime(remaining), progress, start, stop }
+  return { isRunning: state.isRunning, remaining, display: formatTime(remaining), progress, start, stop }
 }

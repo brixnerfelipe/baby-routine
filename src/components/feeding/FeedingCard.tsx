@@ -37,7 +37,7 @@ export function FeedingCard({ onNewSession }: { onNewSession?: () => void }) {
         icon: '/icon-192.png',
       })
     }
-  })
+  }, `baby-burp-timer-${baby?.id}`)
 
   const handleStart = () => {
     feedingTimer.start()
